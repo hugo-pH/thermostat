@@ -40,7 +40,9 @@ The SQLite database contains three tables, thermostat, weather and a datehour. I
 root.dir <- here::here()
 source(file.path(root.dir, "R", "create_db.R"))
 db.path <- file.path(root.dir, "data", "database", "thermostat_db.sqlite")
-# Note the `data/database` directory is not present in this repository, so it needs to be created before creating the database
+# Note the `data/database` directory is not present in this repository, 
+# so it needs to be created before creating the database:
+dir.create(file.path(root.dir, "data", "database"))
 create_db(db.path)
 ```
 
