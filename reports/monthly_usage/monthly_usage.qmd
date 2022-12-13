@@ -1,0 +1,173 @@
+---
+title: "Monthly report of heating usage"
+author: "Hugo Pineda Hernández"
+date: today
+format: 
+  html:
+    toc: true
+    self-contained: true
+    smooth-scroll: true
+execute:
+  echo: false
+  message: false
+params:
+  db_file: "file.sqlite"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+warning=FALSE, message = FALSE
+)
+```
+
+```{r}
+library(DBI)
+library(tidyverse)
+library(lubridate)
+library(patchwork)
+library(ggthemes)
+theme_set(theme_minimal(14))
+```
+
+```{r}
+db.file <- params$db_file
+```
+
+```{r}
+thermostat_db <- DBI::dbConnect(RSQLite::SQLite(), db.file)
+```
+
+```{r}
+# collect tables from db
+datehour <- tbl(thermostat_db, "datehour") |> 
+    collect() 
+
+thermostat <- tbl(thermostat_db, "thermostat") |> 
+    collect() |> 
+  mutate(
+    datetime = ymd_hms(datetime)
+  )
+
+weather <- tbl(thermostat_db, "weather") |> 
+    collect() 
+
+DBI::dbDisconnect(thermostat_db)
+```
+
+```{r}
+# join thermostat with date data
+thermostat.d <- thermostat |> 
+  inner_join(datehour, by = "datehour_id") 
+# join with weather time
+thermostat.weather <- thermostat.d |> 
+  inner_join(weather, by = "datehour_id")
+```
+
+## Active heating time
+
+```{r}
+# get the number of hours the heating was on per month an year
+thermostat.per.month <- thermostat.d |> 
+  group_by(year, month) |> 
+  summarise(
+    time_on_h = sum(boiler_on) / 60 / 60
+  ) |> 
+  ungroup()
+```
+
+The next figure shows the number of hours of active heating time per month and year.
+
+```{r}
+thermostat.per.month |> 
+  mutate(
+    month = month(month, label = TRUE)
+  ) |> 
+  ggplot(aes(x = month, y = time_on_h)) +
+  geom_col(width = 0.5) +
+  labs(
+    x = "Month",
+    y = "Hours"
+  ) +
+  theme(
+    panel.grid.major.x = element_blank()
+  ) +
+  facet_wrap(~year)
+
+```
+
+The next figure compares the number of hours of active heating time per month between different years.
+
+```{r}
+thermostat.per.month |> 
+  mutate(
+    month = month(month, label = TRUE)
+  ) |> 
+  ggplot(aes(x = month, y = time_on_h, fill = as.factor(year))) +
+  geom_col(position = "dodge") +
+  labs(
+    x = "Month",
+    y = "Hours",
+    fill = "Year"
+  ) +
+  theme(
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_fill_colorblind()
+```
+
+## Weather data
+
+If the thermostat setting are constant, the heating time will depend the outside temperature. 
+
+```{r}
+thermostat.temp.per.day <- thermostat.weather |> 
+  group_by(year, month, day) |> 
+  summarise(
+    time_on_h = sum(boiler_on) / 60 / 60,
+    ext_temperature = mean(temperature, na.rm = T)
+  ) |> 
+  ungroup() |> 
+  mutate(
+    dateday = ymd(str_c(year, month, day))
+  )
+```
+
+The next figures compare the number of active heating hours with the average temperature outside:
+
+```{r}
+thermostat.temp.per.day |>
+  ggplot(aes(x = ext_temperature, y = time_on_h)) +
+  geom_point(size = 4, alpha = 0.5) +
+   labs(
+    x ="Average outside temperature",
+    y = "Hours per day",
+    title = "Active heating vs outside temperature",
+    subtitle = "Per year and month"
+    
+  ) +
+  scale_x_continuous(
+    labels = scales::label_number(suffix = "\u00b0C")
+    ) +
+  scale_color_colorblind() +
+  facet_grid(year~month)
+```
+
+```{r}
+thermostat.temp.per.day |>
+  ggplot(aes(x = ext_temperature, y = time_on_h, color = as.factor(year))) +
+  geom_point(size = 4, alpha = 0.5) +
+   labs(
+    x ="Average outside temperature",
+    y = "Hours per day",
+    color = "Year",
+    title = "Active heating vs outside temperature",
+    subtitle = "Data points colored by year"
+    
+  ) +
+  scale_x_continuous(
+    labels = scales::label_number(suffix = "\u00b0C")
+    ) +
+  scale_color_colorblind()
+```
+
+
