@@ -46,7 +46,6 @@ populate_thermostat_tb <- function(path = NULL, db){
   tables <- list("datehour", "thermostat")
   purrr::walk(tables, check_table_exist, db = db)
   
-  # date_hour_db_table <- DBI::dbReadTable(thermostat_db, "datehour")
   datehour_db_table <- dplyr::tbl(thermostat_db, "datehour") |> 
     dplyr::collect()
   
@@ -120,7 +119,8 @@ get_weather_data_vc <- function(date, lat, long, api.key){
   url <- glue::glue("{base.url}{lat}%2C%20{long}/{date}/{date}{end.url}")
   resp <- httr::GET(url=url)
   
-  # if
+  # stop execution if the maximum number of queries per daya
+  # has been reached
   if(resp$status_code == 429){
     bullets <- c(
       "The maximum number of queries on Visual Crossing has been reached."
@@ -161,7 +161,6 @@ get_weather_data_vc <- function(date, lat, long, api.key){
       janitor::clean_names() |> 
       dplyr::rename(temperature = temp) 
 }
-
 
 #' Add weather records for a day into the weather database table
 #'
