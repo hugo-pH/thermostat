@@ -113,7 +113,6 @@ populate_thermostat_tb <- function(path = NULL, db){
 #' @return a tibble
 get_weather_data_vc <- function(date, lat, long, api.key){
   # url for visualcrossing API
-  url <- "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/Amsterdam/2022-11-23/2022-11-25?unitGroup=metric&include=hours&key=6F4HFLENLB7KXLQJSHXPK9ZCR&contentType=csv"
   base.url <- "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
   end.url <- glue::glue("?unitGroup=metric&include=hours&key={api.key}&contentType=csv")
   url <- glue::glue("{base.url}{lat}%2C%20{long}/{date}/{date}{end.url}")
