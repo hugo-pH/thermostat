@@ -23,7 +23,7 @@ This project contains the following directories:
   - `input/`: contains the input files downloaded fron the Netatmo website
   - `database/`: contains the SQLite database file
   
-- `R/`: contains all functions
+- `R/`: contains the functions to create database, read export data, and populate database
 - `reports/`: contains reports to visualize the data
 - `_targets`: directory created by the [targets](https://docs.ropensci.org/targets/) package required to run the pipeline
 - `renv`: directory created by the [renv](https://rstudio.github.io/renv/articles/renv.html) package required to manage project dependencies
